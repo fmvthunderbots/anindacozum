@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- API anahtarı yalnızca iki sağlayıcıya gidebilsin diye -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self' https://cdn.jsdelivr.net blob:; worker-src blob: https://cdn.jsdelivr.net; connect-src 'self' https://cdn.jsdelivr.net https://api.anthropic.com https://generativelanguage.googleapis.com https://script.google.com https://script.googleusercontent.com; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com data: blob:; img-src 'self' data: blob: https://images.unsplash.com; manifest-src 'self'; base-uri 'none'; form-action 'none'">
+<title>Anında Çözüm</title>
+<!-- Uygulama olarak yüklenince adres çubuğu olmadan kendi penceresinde açılır. -->
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="favicon.ico" sizes="any">
+<meta name="theme-color" content="#0b0e16">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Caveat:wght@500&family=Outfit:wght@500;600&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+  :root {
+    color-scheme: dark;
+    --zemin: #ecebe6; --yazi: #f1f3f7; --soluk: #c2cad6; --sonuk: #8f9aab;
+    --sampanya: #dcc096; --cizgi: rgba(255, 255, 255, .13);
+    --alan: rgba(255, 255, 255, .055);
+    --metal: linear-gradient(180deg, #f6e7cf 0%, #d9bc90 46%, #e9d3b0 54%, #b99a6d 100%);
+    --baslik: Outfit, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  [hidden] { display: none !important; }
+  body { margin: 0; min-height: 100vh; background: var(--zemin); color: var(--yazi); font: 16px/1.6 Inter, system-ui, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+  body::before, body::after { content: ""; position: fixed; inset: 0; z-index: -1; pointer-events: none; }
+  body::before { background: url("https://images.unsplash.com/photo-1434030216411-0b793f4b4173?auto=format&fit=crop&w=1920&q=75") center / cover no-repeat; }
+  body::after { background: linear-gradient(100deg, rgba(246, 244, 239, .84) 0%, rgba(246, 244, 239, .62) 46%, rgba(246, 244, 239, .3) 100%); }
+
+  .duzen { max-width: 1200px; margin: 0 auto; padding: 72px 32px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); gap: 72px; align-items: start; }
+  /* Sol alan açık fotoğrafın üstünde durur, paneller koyu kalır. */
+  .giris { position: sticky; top: 72px; --yazi: #141925; --soluk: #3a4352; --cizgi: rgba(20, 25, 37, .2); --sampanya: #7d5e30; color: var(--yazi); }
+  h1 { font: 600 clamp(58px, 7.2vw, 100px) / 1.05 var(--baslik); letter-spacing: -.03em; margin: 0; padding-bottom: .14em; background: linear-gradient(172deg, #10141d 10%, #3d4656 46%, #161a23 62%, #6f5634 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .adimlar { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--cizgi); max-width: 26em; }
+  .adimlar li { display: grid; grid-template-columns: 44px 1fr; padding: 16px 0; border-bottom: 1px solid var(--cizgi); }
+  .adimlar span { font: 600 20px/1.35 var(--baslik); color: var(--sampanya); }
+  .adimlar b { display: block; font-weight: 600; }
+  .adimlar small { font-size: 14px; color: var(--soluk); }
+
+  .sutun { display: grid; gap: 20px; min-width: 0; }
+  .kart { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; padding: 30px; border-radius: 22px; background: linear-gradient(160deg, rgba(30, 35, 48, .93), rgba(13, 16, 24, .96)); -webkit-backdrop-filter: blur(26px) saturate(130%); backdrop-filter: blur(26px) saturate(130%); box-shadow: 0 30px 70px rgba(0, 0, 0, .5); }
+  .kart::before { content: ""; position: absolute; inset: 0; padding: 1px; border-radius: inherit; pointer-events: none; background: linear-gradient(140deg, rgba(255, 255, 255, .5), rgba(255, 255, 255, .07) 32%, rgba(220, 192, 150, .34) 70%, rgba(255, 255, 255, .1)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .genis { grid-column: 1 / -1; }
+  h2 { font: 600 24px/1.25 var(--baslik); letter-spacing: -.01em; margin: 0; }
+
+  label { display: grid; gap: 8px; min-width: 0; font-size: 14px; font-weight: 500; color: var(--soluk); }
+  input, select, textarea { font: 500 15.5px/1.5 Inter, system-ui, sans-serif; letter-spacing: 0; text-transform: none; color: var(--yazi); width: 100%; min-width: 0; padding: 12px 14px; border: 1px solid var(--cizgi); border-radius: 12px; background: var(--alan); transition: border-color .15s, background .15s; }
+  input:hover, select:hover, textarea:hover { border-color: rgba(255, 255, 255, .28); }
+  option { background: #171c28; color: var(--yazi); }
+  textarea { resize: vertical; }
+  ::placeholder { color: var(--sonuk); }
+  input[type="file"] { padding: 10px; border-style: dashed; font-size: 14px; color: var(--soluk); cursor: pointer; }
+  input::file-selector-button { font: 600 13.5px Inter, system-ui, sans-serif; color: var(--yazi); margin-right: 12px; padding: 6px 14px; border: 1px solid var(--cizgi); border-radius: 8px; background: rgba(255, 255, 255, .1); cursor: pointer; }
+
+  .eylem { display: flex; gap: 10px; flex-wrap: wrap; }
+  button { font: 700 15px/1.4 Inter, system-ui, sans-serif; color: #1b1509; padding: 13px 34px; border: 0; border-radius: 12px; background: var(--metal); box-shadow: 0 10px 26px rgba(185, 154, 109, .26), inset 0 1px 0 rgba(255, 255, 255, .7); cursor: pointer; transition: transform .14s, filter .14s; }
+  button:hover:not(:disabled) { filter: brightness(1.07); transform: translateY(-1px); }
+  button.ikincil { color: var(--yazi); background: transparent; box-shadow: inset 0 0 0 1px var(--cizgi); font-weight: 600; }
+  button.kucuk { flex: none; padding: 4px 14px; font-size: 13px; font-weight: 600; }
+  button:disabled { opacity: .42; cursor: default; }
+  #indir { color: #04261d; font-weight: 700; background: linear-gradient(180deg, #a5f3d8 0%, #4cc9a4 47%, #7ae3c3 53%, #2fa582 100%); box-shadow: 0 10px 26px rgba(47, 165, 130, .32), inset 0 1px 0 rgba(255, 255, 255, .7); }
+  #indir:disabled { opacity: .55; }
+  :focus-visible { outline: 2px solid var(--sampanya); outline-offset: 2px; }
+
+  a { color: var(--sampanya); }
+  #ipucu, .not { font-size: 13.5px; color: var(--soluk); margin: 0; }
+  .rozet { justify-self: start; margin: 0; padding: 4px 13px; border: 1px solid rgba(220, 192, 150, .5); border-radius: 99px; font-size: 13.5px; font-weight: 600; color: var(--sampanya); }
+  #kuralListe { list-style: none; margin: 0; padding: 0; display: grid; }
+  #kuralListe li { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--cizgi); overflow-wrap: anywhere; }
+  #kuralListe:empty { display: none; }
+  #durum { margin: 0; font-weight: 500; color: var(--yazi); }
+  #durum:empty, #kuralDurum:empty, #ipucu:empty { display: none; }
+  progress { width: 100%; height: 6px; border: 0; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, .1); -webkit-appearance: none; appearance: none; }
+  progress::-webkit-progress-bar { background: rgba(255, 255, 255, .1); }
+  progress::-webkit-progress-value { background: var(--metal); transition: width .3s linear; }
+  progress::-moz-progress-bar { background: var(--metal); }
+
+  #sayfalar { max-width: 920px; margin: 0 auto; padding: 16px 32px 80px; }
+  #sayfalar:empty { padding: 0; }
+  .sayfa { position: relative; margin-bottom: 18px; border-radius: 4px; overflow: hidden; background: #fff; box-shadow: 0 34px 80px rgba(0, 0, 0, .6); }
+  .sayfa canvas.taban { display: block; width: 100%; height: auto; }
+  .yazi { position: absolute; cursor: move; touch-action: none; user-select: none; }
+  .yazi:hover { background: #1746a215; }
+  .duzeltme { margin-bottom: 48px; }
+  .secim { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--yazi); cursor: pointer; }
+  .secim input { flex: none; width: 18px; height: 18px; padding: 0; accent-color: var(--sampanya); }
+
+  @media (max-width: 960px) {
+    .duzen { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 40px 16px 24px; }
+    .giris { position: static; }
+    body::after { background: rgba(246, 244, 239, .76); }
+    .adimlar { display: none; }
+    #sayfalar { padding: 8px 16px 56px; }
+  }
+  @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } }
+  @media (prefers-reduced-motion: reduce) { button, input, select, textarea { transition: none; } button:hover:not(:disabled) { transform: none; } }
+</style>
+</head>
+<body>
+<main class="duzen">
+  <aside class="giris">
+    <h1>Anında Çözüm</h1>
+    <ol class="adimlar">
+      <li><span>1</span><div><b>Kağıdı yükle</b><small>Sınıf düzeyini seç, PDF'i ekle.</small></div></li>
+      <li><span>2</span><div><b>Çözümü al</b><small>Yanıtlar boşluklara el yazısıyla yazılır.</small></div></li>
+      <li><span>3</span><div><b>Düzelt ve öğret</b><small>Düzeltmelerin o düzeyin kuralı olur.</small></div></li>
+    </ol>
+  </aside>
+
+  <div class="sutun">
+    <section class="kart">
+      <label id="saglayiciAlani">Yapay zeka
+        <select id="saglayici">
+          <option value="gemini">Gemini (ücretsiz anahtar)</option>
+          <option value="claude">Claude (ücretli anahtar)</option>
+        </select>
+      </label>
+      <label id="anahtarAlani">API anahtarın
+        <input id="anahtar" type="password" autocomplete="off" spellcheck="false">
+      </label>
+      <p id="ipucu" class="genis"></p>
+      <label>Sınıf düzeyi
+        <select id="sinif">
+          <option value="">Düzey seç</option>
+          <option value="5">5. sınıf</option>
+          <option value="6">6. sınıf</option>
+          <option value="7">7. sınıf</option>
+          <option value="8">8. sınıf</option>
+        </select>
+      </label>
+      <label>PDF dosyası
+        <input id="dosya" type="file" accept="application/pdf">
+      </label>
+      <div class="eylem genis">
+        <button id="coz">Çöz</button>
+        <button id="indir" class="ikincil" disabled>PDF indir</button>
+      </div>
+      <progress id="ilerleme" class="genis" max="100" value="0" aria-label="Çözüm ilerlemesi" hidden></progress>
+      <p id="durum" class="genis" role="status"></p>
+    </section>
+
+    <section id="kuralPanel" class="kart" hidden>
+      <h2 class="genis">Öğretmen kuralları</h2>
+      <p class="not genis">Yazdığın kural tüm bilgisayarlarda ortak kalır ve o düzeyin sonraki her çözümünde uygulanır.</p>
+      <p class="genis rozet" id="kuralDuzey">Önce yukarıdan sınıf düzeyini seç</p>
+      <label class="genis">Yeni kural
+        <textarea id="yeniKural" rows="2" maxlength="300" placeholder="Örn: Kesirleri alt alta yazarak göster"></textarea>
+      </label>
+      <div class="eylem genis"><button id="ogret">Öğret</button></div>
+      <p id="kuralDurum" class="not genis" role="status"></p>
+      <p id="kuralBos" class="not genis">Bu sınıf için henüz kural yok.</p>
+      <ul id="kuralListe" class="genis"></ul>
+    </section>
+  </div>
+</main>
+<div id="sayfalar"></div>
+<script type="module" src="app.js"></script>
+</body>
+</html>
