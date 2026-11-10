@@ -1,5 +1,10 @@
 const sinirla = (v, a, b) => Math.min(b, Math.max(a, v));
 
+export function sureYaz(ms) {
+  const sn = Math.round(ms / 1000), dk = Math.floor(sn / 60);
+  return dk ? `${dk} dk ${sn % 60} sn` : `${sn} sn`;
+}
+
 const UST_SIMGE = { '⁰': '0', '¹': '1', '²': '2', '³': '3', '⁴': '4', '⁵': '5', '⁶': '6', '⁷': '7', '⁸': '8', '⁹': '9', '⁻': '-', '⁺': '+' };
 const ALT_SIMGE = { '₀': '0', '₁': '1', '₂': '2', '₃': '3', '₄': '4', '₅': '5', '₆': '6', '₇': '7', '₈': '8', '₉': '9' };
 

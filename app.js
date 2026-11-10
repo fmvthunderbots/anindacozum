@@ -1,7 +1,7 @@
 import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
 import Anthropic from 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.2.0/+esm';
-import { degismedi, duzeltmeEkle, ISRAR, kurallariTemizle, metaVar, parcala, talimatYap, temizle } from './core.js';
+import { degismedi, duzeltmeEkle, ISRAR, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle } from './core.js';
 import { KURAL_ADRESI } from './ayar.js';
 
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
@@ -111,23 +111,26 @@ async function bolumCagir(_, b64, talimat) {
   // Düz metin gövde: Apps Script CORS ön kontrolünü desteklemez.
   const r = await fetch(KURAL_ADRESI, { method: 'POST', body: JSON.stringify({ islem: 'coz', b64, talimat }) });
   const j = await r.json();
-  if (j.hata) throw Object.assign(new Error((KURAL_HATALARI[j.hata] || j.hata) + (j.ayrinti ? ` (Kod: ${j.ayrinti})` : '')), { tekrar: j.hata === 'kota' || j.hata === 'model' });
+  if (j.hata) throw Object.assign(new Error((KURAL_HATALARI[j.hata] || j.hata) + (j.ayrinti ? ` (Kod: ${j.ayrinti})` : '')), { tekrar: j.hata === 'kota' || j.hata === 'model', kota: j.hata === 'kota' });
   return JSON.parse(j.metin);
 }
 
 const cagiran = () => (BOLUM ? bolumCagir : SAGLAYICI[$('saglayici').value].cagir);
 
 // Yoğunluk hataları geçicidir; tek sayfa yüzünden tüm kağıt durmasın.
-const BEKLEME_SN = [8, 20];
+// Dakikalık ücretsiz kota bir dakikada açılır, sunucu yoğunluğu daha çabuk geçer.
+const BEKLEME_SN = { kota: [30, 60], yogun: [8, 20] };
 
 async function tekrarli(cagir, key, b64, talimat, sayfaNo) {
   for (let deneme = 0; ; deneme++) {
     try {
       return await cagir(key, b64, talimat);
     } catch (e) {
-      if (deneme >= BEKLEME_SN.length || !(e.tekrar || e instanceof SyntaxError)) throw e;
-      durum(`Sayfa ${sayfaNo}: yapay zeka meşgul, ${BEKLEME_SN[deneme]} sn sonra yeniden denenecek…`);
-      await new Promise((r) => setTimeout(r, BEKLEME_SN[deneme] * 1000));
+      const bekle = BEKLEME_SN[e.kota ? 'kota' : 'yogun'];
+      if (deneme >= bekle.length || !(e.tekrar || e instanceof SyntaxError)) throw e;
+      const neden = e.kota ? 'tüm ücretsiz modellerin dakikalık sınırı doldu' : 'Google sunucuları yoğun';
+      durum(`Sayfa ${sayfaNo}: ${neden}, ${bekle[deneme]} sn sonra kendiliğinden devam edecek…`);
+      await new Promise((r) => setTimeout(r, bekle[deneme] * 1000));
     }
   }
 }
@@ -348,6 +351,7 @@ export function duzeltmeKutusu(s, i) {
     yazi.textContent = 'Düzeltiliyor… Bu biraz sürebilir, sayfayı kapatma.';
     try {
       await Promise.all([yaziTipi(), kurallariGetir()]);
+      const baslangic = Date.now();
       const talimat = duzeltmeEkle(talimatYap(TALIMAT, sinif, kurallar), s.yazilar, not);
       let ham = await tekrarli(cagiran(), key, izgaraliGoruntu(s), talimat, i + 1);
       // Model bazen isteği uygulamıyor ya da sayfaya not düşüyor: bir kez ısrarla yeniden sor.
@@ -370,9 +374,9 @@ export function duzeltmeKutusu(s, i) {
       alan.value = '';
       if (BOLUM && kutucuk.checked) {
         yazi.textContent = await kuralDegistir({ islem: 'ekle', sinif, kural: not }, 'Kural kaydedildi.')
-          ? `Düzeltildi ve ${sinif}. sınıf kuralı olarak kaydedildi.`
+          ? `Düzeltildi ve ${sinif}. sınıf kuralı olarak kaydedildi. Süre: ${sureYaz(Date.now() - baslangic)}.`
           : `Düzeltildi ama kural kaydedilemedi: ${$('kuralDurum').textContent}`;
-      } else yazi.textContent = 'Düzeltildi.';
+      } else yazi.textContent = `Düzeltildi. Süre: ${sureYaz(Date.now() - baslangic)}.`;
     } catch (e) {
       console.error(e);
       yazi.textContent = 'Düzeltilemedi: ' + hataMetni(e);
@@ -506,12 +510,15 @@ async function coz() {
     const cagir = cagiran();
     const talimat = talimatYap(TALIMAT, $('sinif').value, kurallar);
     const hatalar = [];
+    const baslangic = Date.now();
+    let cozulen = 0;
     for (const [i, s] of sayfalar.entries()) {
       if (s.bitti) continue;
       ilerlemeGoster(i, sayfalar.length);
       durum(`Sayfa ${i + 1}/${sayfalar.length} çözülüyor… Bu biraz sürebilir, sayfayı kapatma.`);
       try {
         uygula(i, await tekrarli(cagir, key, izgaraliGoruntu(s), talimat, i + 1));
+        cozulen++;
       } catch (e) {
         // Şifre gibi kalıcı hatalar durdurur; tek sayfanın sorunu diğerlerini engellemesin.
         if (!(e.tekrar || e instanceof SyntaxError)) throw e;
@@ -519,8 +526,9 @@ async function coz() {
         hatalar.push(`${i + 1}. sayfa: ${e.message}`);
       }
     }
-    if (hatalar.length) durum(`Çözülemeyen sayfalar var. ${hatalar.join(' ')} Yeniden "Çöz"e basarsan yalnızca bunlar denenir.`);
-    else durum('Bitti. Çözümler aşağıda. Beğenmediğin sayfanın altından düzeltme isteyebilirsin.');
+    const sure = `${cozulen} sayfa çözüldü, süre: ${sureYaz(Date.now() - baslangic)}.`;
+    if (hatalar.length) durum(`${sure} Çözülemeyen sayfalar var. ${hatalar.join(' ')} Yeniden "Çöz"e basarsan yalnızca bunlar denenir.`);
+    else durum(`Bitti: ${sure} Çözümler aşağıda; beğenmediğin sayfanın altından düzeltme isteyebilirsin.`);
     if (!hatalar.length) $('sayfalar').scrollIntoView();
   } catch (e) {
     console.error(e);
