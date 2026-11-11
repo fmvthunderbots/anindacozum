@@ -30,7 +30,8 @@ export function parcala(text) {
     .replace(/[₀₁₂₃₄₅₆₇₈₉]+/g, (m) => `_{${[...m].map((c) => ALT_SIMGE[c]).join('')}}`);
   const parcalar = [];
   let son = 0;
-  const kalip = /\[(?<pay>[^|\]]+)\|(?<payda>[^|\]]+)(?:\|(?<genis>[^|\]]+))?\]|\^\{(?<us>[^}]+)\}|\^(?<usKisa>[-−]?[0-9A-Za-z]+)|~\{(?<devir>[^}]+)\}|_\{(?<alt>[^}]+)\}|√(?<kok>\([^)]*\)|[0-9A-Za-z,.]+)|@\{(?<daire>[^}]+)\}|(?<ustTip>↔|→|⌒)\{(?<ust>[^}]+)\}/g;
+  // Pay ve payda "[" içeremez: köşeli parantez [(-[3|4]) + ...] kesir başlangıcı sanılmasın.
+  const kalip = /\[(?<pay>[^|[\]]+)\|(?<payda>[^|[\]]+)(?:\|(?<genis>[^|[\]]+))?\]|\^\{(?<us>[^}]+)\}|\^(?<usKisa>[-−]?[0-9A-Za-z]+)|~\{(?<devir>[^}]+)\}|_\{(?<alt>[^}]+)\}|√(?<kok>\([^)]*\)|[0-9A-Za-z,.]+)|@\{(?<daire>[^}]+)\}|(?<ustTip>↔|→|⌒)\{(?<ust>[^}]+)\}/g;
   for (const m of text.matchAll(kalip)) {
     const g = m.groups;
     if (m.index > son) parcalar.push({ metin: text.slice(son, m.index) });
