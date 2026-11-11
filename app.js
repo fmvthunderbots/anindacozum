@@ -697,7 +697,7 @@ export async function pdfBirlestir(dosyalar) {
 async function klasoreKaydet(dosyalar) {
   if (!window.showDirectoryPicker) {
     for (const d of dosyalar) blobIndir(d.ad, d.bytes);
-    return 'İndirilenler klasörü';
+    return 'İndirilenler';
   }
   let klasor;
   try {
@@ -714,23 +714,25 @@ async function klasoreKaydet(dosyalar) {
     await yazici.write(d.bytes);
     await yazici.close();
   }
-  return klasor.name + ' klasörü';
+  return klasor.name;
 }
 
-const aracDurum = (m) => { $('aracDurum').textContent = m; };
+// tip: 'ok' yeşil, 'hata' kırmızı, boş: düz bilgi.
+const aracDurum = (m, tip = '') => { $('aracDurum').textContent = m; $('aracDurum').dataset.tip = tip; };
 
 async function bol() {
   const f = $('bolDosya').files[0];
-  if (!f) return aracDurum("Önce bölünecek PDF'i seç.");
+  if (!f) return aracDurum("Önce bölünecek PDF'i seç.", 'hata');
   $('bolBtn').disabled = true;
   try {
     const parcalar = await pdfBol(await f.arrayBuffer(), f.name.replace(/\.pdf$/i, ''), +$('bolSayi').value);
     aracDurum('Klasör seç…');
     const yer = await klasoreKaydet(parcalar);
-    aracDurum(yer ? `${parcalar.length} parça ${yer} içine kaydedildi: ${parcalar.map((p) => p.ad).join(', ')}` : 'İptal edildi.');
+    if (yer) aracDurum(`${parcalar.length} parça "${yer}" klasörüne kaydedildi.`, 'ok');
+    else aracDurum('İptal edildi.');
   } catch (e) {
     console.error(e);
-    aracDurum('PDF bölünemedi. Dosya şifreli veya bozuk olabilir.');
+    aracDurum('PDF bölünemedi. Dosya şifreli veya bozuk olabilir.', 'hata');
   } finally {
     $('bolBtn').disabled = false;
   }
@@ -739,7 +741,7 @@ async function bol() {
 async function birlestir() {
   // Ada göre doğal sıra: "parça 2" "parça 10"dan önce gelir.
   const dosyalar = [...$('birlesDosya').files].sort((a, b) => a.name.localeCompare(b.name, 'tr', { numeric: true }));
-  if (dosyalar.length < 2) return aracDurum("Birleştirmek için en az iki PDF seç.");
+  if (dosyalar.length < 2) return aracDurum('Birleştirmek için en az iki PDF seç.', 'hata');
   $('birlesBtn').disabled = true;
   try {
     const bytes = await pdfBirlestir(await Promise.all(dosyalar.map((f) => f.arrayBuffer())));
@@ -747,10 +749,11 @@ async function birlestir() {
     // "Kağıt parça 1-cozumlu.pdf" -> "Kağıt birleştirilmiş.pdf"
     const kok = dosyalar[0].name.replace(/\.pdf$/i, '').replace(/-cozumlu$/i, '').replace(/ parça \d+$/i, '');
     const yer = await klasoreKaydet([{ ad: `${kok} birleştirilmiş.pdf`, bytes }]);
-    aracDurum(yer ? `Birleştirildi (${dosyalar.map((f) => f.name).join(' + ')}) ve ${yer} içine kaydedildi.` : 'İptal edildi.');
+    if (yer) aracDurum(`${dosyalar.length} PDF birleştirildi ve "${yer}" klasörüne kaydedildi.`, 'ok');
+    else aracDurum('İptal edildi.');
   } catch (e) {
     console.error(e);
-    aracDurum('PDF birleştirilemedi. Dosyalardan biri şifreli veya bozuk olabilir.');
+    aracDurum('PDF birleştirilemedi. Dosyalardan biri şifreli veya bozuk olabilir.', 'hata');
   } finally {
     $('birlesBtn').disabled = false;
   }

@@ -30,7 +30,7 @@
 
   .duzen { max-width: 1200px; margin: 0 auto; padding: 72px 32px 40px; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 560px); gap: 72px; align-items: start; }
   /* Sol alan açık fotoğrafın üstünde durur, paneller koyu kalır. */
-  .giris { position: sticky; top: 72px; --yazi: #141925; --soluk: #3a4352; --cizgi: rgba(20, 25, 37, .2); --sampanya: #7d5e30; color: var(--yazi); }
+  .giris { --yazi: #141925; --soluk: #3a4352; --cizgi: rgba(20, 25, 37, .2); --sampanya: #7d5e30; color: var(--yazi); }
   h1 { font: 600 clamp(58px, 7.2vw, 100px) / 1.05 var(--baslik); letter-spacing: -.03em; margin: 0; padding-bottom: .14em; background: linear-gradient(172deg, #10141d 10%, #3d4656 46%, #161a23 62%, #6f5634 100%); -webkit-background-clip: text; background-clip: text; color: transparent; }
   .adimlar { list-style: none; margin: 28px 0 0; padding: 0; border-top: 1px solid var(--cizgi); max-width: 26em; }
   .adimlar li { display: grid; grid-template-columns: 44px 1fr; padding: 16px 0; border-bottom: 1px solid var(--cizgi); }
@@ -70,7 +70,24 @@
   #kuralListe li { display: flex; justify-content: space-between; align-items: center; gap: 14px; padding: 11px 0; border-top: 1px solid var(--cizgi); overflow-wrap: anywhere; }
   #kuralListe:empty { display: none; }
   #durum { margin: 0; font-weight: 500; color: var(--yazi); }
-  #durum:empty, #kuralDurum:empty, #ipucu:empty { display: none; }
+  #durum:empty, #kuralDurum:empty, #ipucu:empty, #aracDurum:empty { display: none; }
+
+  /* Açık zemindeki kart: fotoğrafın açık tarafıyla uyumlu, buzlu beyaz cam. */
+  .kart.acik { --yazi: #141925; --soluk: #4a5263; --cizgi: rgba(20, 25, 37, .16); --alan: rgba(255, 255, 255, .7); color-scheme: light; color: var(--yazi); background: linear-gradient(160deg, rgba(255, 255, 255, .78), rgba(246, 240, 228, .66)); box-shadow: 0 24px 60px rgba(40, 32, 18, .16); }
+  .kart.acik::before { background: linear-gradient(140deg, rgba(255, 255, 255, .95), rgba(200, 170, 120, .4) 55%, rgba(255, 255, 255, .6)); }
+  .kart.acik option { background: #fff; color: var(--yazi); }
+  .kart.acik input::file-selector-button { color: var(--yazi); background: rgba(20, 25, 37, .06); }
+  .kart.acik button.ikincil { color: #f6efe3; background: #1a1f2b; box-shadow: 0 8px 20px rgba(20, 25, 37, .22); }
+  .araclar { margin-top: 24px; }
+  .nasil summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; padding: 7px 16px; border: 1px solid var(--cizgi); border-radius: 99px; font-weight: 600; font-size: 14.5px; color: var(--yazi); background: rgba(255, 255, 255, .55); }
+  .nasil summary::-webkit-details-marker { display: none; }
+  .nasil summary::after { content: "+"; font-weight: 700; color: var(--sampanya); }
+  .nasil[open] summary::after { content: "−"; }
+  .nasil { margin-top: 22px; }
+  .nasil .adimlar { margin-top: 14px; }
+  #aracDurum { margin: 0; padding: 9px 13px; border-radius: 10px; font-size: 14px; font-weight: 600; }
+  #aracDurum[data-tip="ok"] { color: #0f5132; background: rgba(46, 160, 110, .16); }
+  #aracDurum[data-tip="hata"] { color: #842029; background: rgba(214, 64, 69, .14); }
   progress { width: 100%; height: 6px; border: 0; border-radius: 99px; overflow: hidden; background: rgba(255, 255, 255, .1); -webkit-appearance: none; appearance: none; }
   progress::-webkit-progress-bar { background: rgba(255, 255, 255, .1); }
   progress::-webkit-progress-value { background: var(--metal); transition: width .3s linear; }
@@ -90,7 +107,6 @@
     .duzen { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 40px 16px 24px; }
     .giris { position: static; }
     body::after { background: rgba(246, 244, 239, .76); }
-    .adimlar { display: none; }
     #sayfalar { padding: 8px 16px 56px; }
   }
   @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } }
@@ -101,11 +117,37 @@
 <main class="duzen">
   <aside class="giris">
     <h1>Anında Çözüm</h1>
+    <details class="nasil">
+    <summary>Nasıl çalışır?</summary>
     <ol class="adimlar">
       <li><span>1</span><div><b>Kağıdı yükle</b><small>Sınıf düzeyini seç, PDF'i ekle.</small></div></li>
       <li><span>2</span><div><b>Çözümü al</b><small>Yanıtlar boşluklara el yazısıyla yazılır.</small></div></li>
       <li><span>3</span><div><b>Düzelt ve öğret</b><small>Düzeltmelerin o düzeyin kuralı olur.</small></div></li>
     </ol>
+    </details>
+
+    <section class="kart acik araclar">
+      <h2 class="genis">PDF araçları</h2>
+      <p class="not genis">Büyük PDF'i parçalara böl, istediğin parçayı çözdür; bitince çözülmüş parçaları birleştir.</p>
+      <label>Bölünecek PDF
+        <input id="bolDosya" type="file" accept="application/pdf">
+      </label>
+      <label>Kaç parçaya
+        <select id="bolSayi">
+          <option value="2">2 parça</option>
+          <option value="3">3 parça</option>
+          <option value="4">4 parça</option>
+          <option value="5">5 parça</option>
+          <option value="6">6 parça</option>
+        </select>
+      </label>
+      <div class="eylem genis"><button id="bolBtn" class="ikincil">Böl ve klasöre kaydet</button></div>
+      <label class="genis">Birleştirilecek PDF'ler (birden çok seç)
+        <input id="birlesDosya" type="file" accept="application/pdf" multiple>
+      </label>
+      <div class="eylem genis"><button id="birlesBtn" class="ikincil">Birleştir ve kaydet</button></div>
+      <p id="aracDurum" class="genis" role="status"></p>
+    </section>
   </aside>
 
   <div class="sutun">
@@ -151,29 +193,6 @@
       <p id="kuralDurum" class="not genis" role="status"></p>
       <p id="kuralBos" class="not genis">Bu sınıf için henüz kural yok.</p>
       <ul id="kuralListe" class="genis"></ul>
-    </section>
-
-    <section class="kart">
-      <h2 class="genis">PDF araçları</h2>
-      <p class="not genis">Büyük bir PDF'i parçalara böl, istediğin parçayı yukarıdan çözdür. Bitince çözülmüş parçaları tek PDF'te birleştir.</p>
-      <label>Bölünecek PDF
-        <input id="bolDosya" type="file" accept="application/pdf">
-      </label>
-      <label>Kaç parçaya
-        <select id="bolSayi">
-          <option value="2">2 parça</option>
-          <option value="3">3 parça</option>
-          <option value="4">4 parça</option>
-          <option value="5">5 parça</option>
-          <option value="6">6 parça</option>
-        </select>
-      </label>
-      <div class="eylem genis"><button id="bolBtn" class="ikincil">Böl ve klasöre kaydet</button></div>
-      <label class="genis">Birleştirilecek PDF'ler (birden çok seç)
-        <input id="birlesDosya" type="file" accept="application/pdf" multiple>
-      </label>
-      <div class="eylem genis"><button id="birlesBtn" class="ikincil">Birleştir ve kaydet</button></div>
-      <p id="aracDurum" class="not genis" role="status"></p>
     </section>
   </div>
 </main>
