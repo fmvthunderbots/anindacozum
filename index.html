@@ -152,6 +152,29 @@
       <p id="kuralBos" class="not genis">Bu sınıf için henüz kural yok.</p>
       <ul id="kuralListe" class="genis"></ul>
     </section>
+
+    <section class="kart">
+      <h2 class="genis">PDF araçları</h2>
+      <p class="not genis">Büyük bir PDF'i parçalara böl, istediğin parçayı yukarıdan çözdür. Bitince çözülmüş parçaları tek PDF'te birleştir.</p>
+      <label>Bölünecek PDF
+        <input id="bolDosya" type="file" accept="application/pdf">
+      </label>
+      <label>Kaç parçaya
+        <select id="bolSayi">
+          <option value="2">2 parça</option>
+          <option value="3">3 parça</option>
+          <option value="4">4 parça</option>
+          <option value="5">5 parça</option>
+          <option value="6">6 parça</option>
+        </select>
+      </label>
+      <div class="eylem genis"><button id="bolBtn" class="ikincil">Böl ve klasöre kaydet</button></div>
+      <label class="genis">Birleştirilecek PDF'ler (birden çok seç)
+        <input id="birlesDosya" type="file" accept="application/pdf" multiple>
+      </label>
+      <div class="eylem genis"><button id="birlesBtn" class="ikincil">Birleştir ve kaydet</button></div>
+      <p id="aracDurum" class="not genis" role="status"></p>
+    </section>
   </div>
 </main>
 <div id="sayfalar"></div>

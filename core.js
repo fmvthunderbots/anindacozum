@@ -1,5 +1,18 @@
 const sinirla = (v, a, b) => Math.min(b, Math.max(a, v));
 
+// Sayfaları n parçaya olabildiğince eşit böler; fazla sayfalar baştaki parçalara gider. [bas, son] sıfırdan, dahil.
+export function parcaAraliklari(toplam, n) {
+  const parca = Math.max(1, Math.min(n, toplam)), taban = Math.floor(toplam / parca), fazla = toplam % parca;
+  const araliklar = [];
+  let bas = 0;
+  for (let i = 0; i < parca; i++) {
+    const boy = taban + (i < fazla ? 1 : 0);
+    araliklar.push([bas, bas + boy - 1]);
+    bas += boy;
+  }
+  return araliklar;
+}
+
 export function sureYaz(ms) {
   const sn = Math.round(ms / 1000), dk = Math.floor(sn / 60);
   return dk ? `${dk} dk ${sn % 60} sn` : `${sn} sn`;

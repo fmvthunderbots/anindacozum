@@ -1,7 +1,7 @@
 import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
 import Anthropic from 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.2.0/+esm';
-import { degismedi, duzeltmeEkle, ISRAR, kontrolEkle, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle, yerlestir } from './core.js';
+import { degismedi, duzeltmeEkle, ISRAR, kontrolEkle, kurallariTemizle, metaVar, parcaAraliklari, parcala, sureYaz, talimatYap, temizle, yerlestir } from './core.js';
 import { KURAL_ADRESI } from './ayar.js';
 
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
@@ -666,14 +666,101 @@ export async function pdfUret() {
   return cikti.save();
 }
 
+function blobIndir(ad, bytes) {
+  const url = URL.createObjectURL(new Blob([bytes], { type: 'application/pdf' }));
+  Object.assign(document.createElement('a'), { href: url, download: ad }).click();
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
+}
+
+// --- PDF araçları: bölme ve birleştirme tamamen tarayıcıda, sayfalar vektör olarak korunur.
+
+export async function pdfBol(veri, ad, n) {
+  const kaynak = await PDFDocument.load(veri);
+  return Promise.all(parcaAraliklari(kaynak.getPageCount(), n).map(async ([bas, son], i) => {
+    const yeni = await PDFDocument.create();
+    const sayfaNo = Array.from({ length: son - bas + 1 }, (_, k) => bas + k);
+    for (const p of await yeni.copyPages(kaynak, sayfaNo)) yeni.addPage(p);
+    return { ad: `${ad} parça ${i + 1}.pdf`, bytes: await yeni.save() };
+  }));
+}
+
+export async function pdfBirlestir(dosyalar) {
+  const yeni = await PDFDocument.create();
+  for (const veri of dosyalar) {
+    const d = await PDFDocument.load(veri);
+    for (const p of await yeni.copyPages(d, d.getPageIndices())) yeni.addPage(p);
+  }
+  return yeni.save();
+}
+
+// Edge/Chrome'da öğretmenin seçtiği klasöre yazar, diğer tarayıcılarda indirir. İptal edilirse null döner.
+async function klasoreKaydet(dosyalar) {
+  if (!window.showDirectoryPicker) {
+    for (const d of dosyalar) blobIndir(d.ad, d.bytes);
+    return 'İndirilenler klasörü';
+  }
+  let klasor;
+  try {
+    klasor = await window.showDirectoryPicker({ mode: 'readwrite' });
+  } catch (e) {
+    if (e.name === 'AbortError') return null;
+    throw e;
+  }
+  for (const d of dosyalar) {
+    // Klasördeki aynı adlı dosyanın üstüne yazma.
+    let ad = d.ad;
+    for (let k = 2; await klasor.getFileHandle(ad).then(() => true, () => false); k++) ad = d.ad.replace(/\.pdf$/i, ` (${k}).pdf`);
+    const yazici = await (await klasor.getFileHandle(ad, { create: true })).createWritable();
+    await yazici.write(d.bytes);
+    await yazici.close();
+  }
+  return klasor.name + ' klasörü';
+}
+
+const aracDurum = (m) => { $('aracDurum').textContent = m; };
+
+async function bol() {
+  const f = $('bolDosya').files[0];
+  if (!f) return aracDurum("Önce bölünecek PDF'i seç.");
+  $('bolBtn').disabled = true;
+  try {
+    const parcalar = await pdfBol(await f.arrayBuffer(), f.name.replace(/\.pdf$/i, ''), +$('bolSayi').value);
+    aracDurum('Klasör seç…');
+    const yer = await klasoreKaydet(parcalar);
+    aracDurum(yer ? `${parcalar.length} parça ${yer} içine kaydedildi: ${parcalar.map((p) => p.ad).join(', ')}` : 'İptal edildi.');
+  } catch (e) {
+    console.error(e);
+    aracDurum('PDF bölünemedi. Dosya şifreli veya bozuk olabilir.');
+  } finally {
+    $('bolBtn').disabled = false;
+  }
+}
+
+async function birlestir() {
+  // Ada göre doğal sıra: "parça 2" "parça 10"dan önce gelir.
+  const dosyalar = [...$('birlesDosya').files].sort((a, b) => a.name.localeCompare(b.name, 'tr', { numeric: true }));
+  if (dosyalar.length < 2) return aracDurum("Birleştirmek için en az iki PDF seç.");
+  $('birlesBtn').disabled = true;
+  try {
+    const bytes = await pdfBirlestir(await Promise.all(dosyalar.map((f) => f.arrayBuffer())));
+    aracDurum('Klasör seç…');
+    // "Kağıt parça 1-cozumlu.pdf" -> "Kağıt birleştirilmiş.pdf"
+    const kok = dosyalar[0].name.replace(/\.pdf$/i, '').replace(/-cozumlu$/i, '').replace(/ parça \d+$/i, '');
+    const yer = await klasoreKaydet([{ ad: `${kok} birleştirilmiş.pdf`, bytes }]);
+    aracDurum(yer ? `Birleştirildi (${dosyalar.map((f) => f.name).join(' + ')}) ve ${yer} içine kaydedildi.` : 'İptal edildi.');
+  } catch (e) {
+    console.error(e);
+    aracDurum('PDF birleştirilemedi. Dosyalardan biri şifreli veya bozuk olabilir.');
+  } finally {
+    $('birlesBtn').disabled = false;
+  }
+}
+
 async function indir() {
   $('indir').disabled = true;
   durum('PDF hazırlanıyor…');
   try {
-    const url = URL.createObjectURL(new Blob([await pdfUret()], { type: 'application/pdf' }));
-    const a = Object.assign(document.createElement('a'), { href: url, download: `${dosyaAdi}-cozumlu.pdf` });
-    a.click();
-    setTimeout(() => URL.revokeObjectURL(url), 10000);
+    blobIndir(`${dosyaAdi}-cozumlu.pdf`, await pdfUret());
     durum('PDF indirildi.');
   } catch (e) {
     console.error(e);
@@ -703,6 +790,8 @@ $('dosya').onchange = async (e) => {
 };
 $('coz').onclick = coz;
 $('indir').onclick = indir;
+$('bolBtn').onclick = bol;
+$('birlesBtn').onclick = birlestir;
 $('ogret').onclick = ogret;
 $('sinif').onchange = kurallariGoster;
 localStorage.removeItem('sifre'); // şifreli sürümden tarayıcıda kalan kayıt
