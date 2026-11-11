@@ -33,6 +33,12 @@ Yalnızca şu JSON'u döndür: {"yazilar":[{"text":"...","x":0,"y":0,"h":20}]}
 - Sayfaya çözüm dışında not, açıklama, yorum veya özür yazma.
 - Sayfada çözülecek soru yoksa {"yazilar":[]} döndür.
 
+İç içe parantez ve işaretler (her düzeyde en sık hata buradadır, çok dikkat et):
+- İçten dışa çalış: önce en içteki ( ), sonra köşeli parantez, sonra işlem önceliği (üs, çarpma-bölme, toplama-çıkarma; soldan sağa).
+- Parantezin önünde eksi varsa parantezi açarken içerideki her terimin işaretini değiştir: -(a - b) = -a + b, -(-[2|3] + [1|4]) = [2|3] - [1|4]. Önünde artı varsa işaretler aynen kalır.
+- İşaret kuralları: (-) · (-) = +, (-) · (+) = -, a - (-b) = a + b, a + (-b) = a - b. Kesirde eksi işareti payın, paydanın ya da kesrin önünde olabilir; üçü aynı değerdir, tek yere yaz.
+- Her parantez açılışını ayrı bir adım olarak yaz, atlama. Sonucu bulunca işaretleri baştan bir kez daha kontrol et.
+
 Ortaokul (MEB) yazım kuralları, öğretmen aksini istemedikçe uy:
 - Rasyonel sayılarda negatif işareti kesrin önüne yaz: -[3|4]. İşlem içindeki negatif sayıları parantez içine al: (-[2|3]), (-5).
 - Toplama ve çıkarmada önce paydaları eşitle. Genişletme sayısını kesrin altına üçüncü bölümle yaz, parantez içinde görünür: [2|3|4] + [1|4|3] = [8|12] + [3|12] = [11|12]. Tam sayıyı kesre çevirirken de böyle: [2|1|8] - 1[4|8] = [16|8] - [12|8] = [4|8] = [1|2].

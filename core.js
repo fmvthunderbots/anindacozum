@@ -60,7 +60,7 @@ export function duzeltmeEkle(talimat, yazilar, not) {
 
 // İkinci yapay zeka: ilk çözümü öğretmen gözüyle denetler.
 export function kontrolEkle(talimat, yazilar) {
-  return `${talimat}\n\nBu sayfa bir kez çözüldü. Şimdi sen bu çözümü denetleyen matematik öğretmenisin. Çözüm:\n${JSON.stringify({ yazilar })}\n\nGörüntüdeki her soruyu kendin yeniden çöz ve bu çözümle karşılaştır. Yanlış sonucu, hatalı veya eksik adımı, çözülmeden kalmış soruyu ve yukarıdaki yazım kurallarına ya da sınıf düzeyine uymayan gösterimi düzelt. Yanlış yere yazılmış ya da basılı metnin üstüne binen satırı doğru boşluğa taşı. Doğru olan satırları aynen bırak. Denetim hakkında not yazma. Sayfanın tüm çözümünü aynı JSON biçiminde döndür.`;
+  return `${talimat}\n\nBu sayfa bir kez çözüldü. Şimdi sen bu çözümü denetleyen matematik öğretmenisin. Çözüm:\n${JSON.stringify({ yazilar })}\n\nGörüntüdeki her soruyu kendin yeniden çöz ve bu çözümle karşılaştır. Özellikle iç içe parantezleri, parantez önündeki eksiyi, işaret kurallarını ve işlem önceliğini adım adım yeniden hesapla; tek bir işaret hatası bile varsa o satırdan itibaren düzelt. Yanlış sonucu, hatalı veya eksik adımı, çözülmeden kalmış soruyu ve yukarıdaki yazım kurallarına ya da sınıf düzeyine uymayan gösterimi düzelt. Yanlış yere yazılmış ya da basılı metnin üstüne binen satırı doğru boşluğa taşı. Doğru olan satırları aynen bırak. Denetim hakkında not yazma. Sayfanın tüm çözümünü aynı JSON biçiminde döndür.`;
 }
 
 // Model isteği uygulamadığında bir kez daha bununla sorulur.
