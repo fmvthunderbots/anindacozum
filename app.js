@@ -1,7 +1,7 @@
 import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
 import Anthropic from 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.2.0/+esm';
-import { degismedi, duzeltmeEkle, ISRAR, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle } from './core.js';
+import { degismedi, duzeltmeEkle, ISRAR, kontrolEkle, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle } from './core.js';
 import { KURAL_ADRESI } from './ayar.js';
 
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
@@ -20,18 +20,21 @@ Yalnızca şu JSON'u döndür: {"yazilar":[{"text":"...","x":0,"y":0,"h":20}]}
 - Cevap kutularına, noktalı çizgilerin hemen üstüne, boşluklara yaz. Basılı metnin ve şekillerin üstüne asla yazma; satırları birbirinin üstüne bindirme.
 - Satırların sağa taşmamasına dikkat et; sığmıyorsa alt satıra böl.
 - Boşluk varsa kısa çözüm adımlarını, sonra net cevabı yaz. Boşluk darsa yalnızca cevabı yaz.
-- Sayfanın dilinde yaz. Çarpmayı ×, bölmeyi ÷ ile yaz. Ondalık ayırıcı virgüldür: 2,5.
+- Sayfanın dilinde yaz. Çarpmayı · ile yaz: 5 · 10, 6 · (2x + 5), (+4) · (-3); soru × kullanıyorsa × kullan. Bölmeyi ÷ ile yaz. Ondalık ayırıcı virgüldür: 2,5.
 - Kesirleri her zaman alt alta yaz: pay ve paydayı [3|4] biçiminde ver; tam sayılı kesir 2[1|3] olur. Alt alta kesirli satır dikeyde yaklaşık 1,6 kat yer kaplar, satırları ona göre aralıklı koy.
 - Üsleri 2^{3}, 10^{-2}, (-3)^{2} biçiminde yaz; üs yukarıda küçük görünür. ² ³ gibi üst simge karakterleri veya 2^3 kullanma.
 - Devirli ondalıkta devreden kısmı ~{...} içine yaz: 0,~{3} ve 1,2~{45}. Devreden kısmın üstüne çizgi çekilir.
 - Karekökü √ ile yaz: √12 = 2√3.
 - Alt indisi x_{1}, y_{2} biçiminde yaz. Açıyı 35°, yüzdeyi %25, birimleri cm^{2}, m^{3} diye yaz; eşitsizlikte <, >, ≤, ≥ kullan.
+- Çoktan seçmeli soruda doğru şıkkın harfini daire içine al: @{B} yaz ve x,y değerini kağıttaki o şık harfinin tam konumu yap ki daire harfin üstüne otursun. Gerekirse kısa işlemi şıkların altındaki boşluğa yaz.
+- Tablo, kutu, kart veya şekil içindeki boşlukları ve sembolleri (□, ▲, ★) doğrudan o yerin içine ya da hemen yanına yaz: ▲ = +15.
+- Sözel problemlerde adımları kısa etiketlerle yaz ve sonuca birimini ekle: "A: 42 - 18 = 24°", "24° ÷ 2° = 12 saat", "12 · 1 = 12 kW harcar".
 - Sayfaya çözüm dışında not, açıklama, yorum veya özür yazma.
 - Sayfada çözülecek soru yoksa {"yazilar":[]} döndür.
 
 Ortaokul (MEB) yazım kuralları, öğretmen aksini istemedikçe uy:
 - Rasyonel sayılarda negatif işareti kesrin önüne yaz: -[3|4]. İşlem içindeki negatif sayıları parantez içine al: (-[2|3]), (-5).
-- Toplama ve çıkarmada önce paydaları eşitle ve genişletmeyi göster: [2|3] + [1|4] = [8|12] + [3|12] = [11|12].
+- Toplama ve çıkarmada önce paydaları eşitle. Genişletme sayısını kesrin altına üçüncü bölümle yaz, parantez içinde görünür: [2|3|4] + [1|4|3] = [8|12] + [3|12] = [11|12]. Tam sayıyı kesre çevirirken de böyle: [2|1|8] - 1[4|8] = [16|8] - [12|8] = [4|8] = [1|2].
 - Çarpmada sadeleştirmeyi işlemden önce yap. Bölmede ikinci kesri ters çevirip çarpmaya dönüştür: [2|3] ÷ [4|5] = [2|3] × [5|4].
 - Sonucu en sade biçimde yaz. Bileşik kesir ancak soru tam sayılı kesir istiyorsa tam sayılı kesre çevrilir.
 - Ondalık gösterimi kesre çevirirken paydayı 10, 100, 1000 yaparak göster: 0,25 = [25|100] = [1|4].
@@ -203,9 +206,58 @@ function yaziYaz(g, text, x, y, px, ciz = true) {
   };
   let cx = x;
   for (const p of parcala(text)) {
-    if (p.metin !== undefined) cx += yaz(p.metin, cx, y, px);
+    if (p.metin !== undefined && /^\s*_{3,}\s*$/.test(p.metin)) {
+      // Alt alta işlemin sonuç çizgisi: alt çizgi karakterleri tek düz çizgi olur.
+      const w = p.metin.trim().length * px * 0.42;
+      if (ciz) g.fillRect(cx, y + px * 0.1, w, Math.max(1, px * 0.06));
+      cx += w;
+    }
+    else if (p.metin !== undefined) cx += yaz(p.metin, cx, y, px);
     else if (p.us !== undefined) cx += yaz(p.us, cx, y - px * 0.38, px * 0.6) + px * 0.04;
     else if (p.alt !== undefined) cx += yaz(p.alt, cx, y + px * 0.3, px * 0.6) + px * 0.04;
+    else if (p.ust !== undefined) {
+      const w = yaz(p.ust, cx, y, px);
+      if (ciz) {
+        const uy = y - px * 0.62, uc = Math.max(3, px * 0.16);
+        g.save();
+        g.strokeStyle = g.fillStyle;
+        g.lineWidth = Math.max(1, px * 0.05);
+        g.lineCap = g.lineJoin = 'round';
+        g.beginPath();
+        if (p.tip === '⌒') {
+          g.moveTo(cx, uy + px * 0.08);
+          g.quadraticCurveTo(cx + w / 2, uy - px * 0.22, cx + w, uy + px * 0.08);
+        } else {
+          g.moveTo(cx, uy);
+          g.lineTo(cx + w, uy);
+          g.moveTo(cx + w - uc, uy - uc * 0.6);
+          g.lineTo(cx + w, uy);
+          g.lineTo(cx + w - uc, uy + uc * 0.6);
+          if (p.tip === '↔') {
+            g.moveTo(cx + uc, uy - uc * 0.6);
+            g.lineTo(cx, uy);
+            g.lineTo(cx + uc, uy + uc * 0.6);
+          }
+        }
+        g.stroke();
+        g.restore();
+      }
+      cx += w;
+    }
+    else if (p.daire !== undefined) {
+      // Doğru şıkkın harfi kalemle daire içine alınmış gibi.
+      const pay = px * 0.3, w = yaz(p.daire, cx + pay, y, px);
+      if (ciz) {
+        g.save();
+        g.strokeStyle = g.fillStyle;
+        g.lineWidth = Math.max(1, px * 0.06);
+        g.beginPath();
+        g.ellipse(cx + pay + w / 2, y, w / 2 + pay, px * 0.62, -0.08, 0, Math.PI * 2);
+        g.stroke();
+        g.restore();
+      }
+      cx += w + pay * 2;
+    }
     else if (p.kok !== undefined) {
       // El yazısı fontunda √ yok: kök işaretini ve üst çizgisini kalemle çizer gibi çiz.
       const w = yaziYaz(g, p.kok, 0, 0, px, false), sol = px * 0.5;
@@ -233,12 +285,18 @@ function yaziYaz(g, text, x, y, px, ciz = true) {
     } else {
       // Pay ve payda kendi içinde üs içerebilir, aynı çizimle yazılır.
       const kp = px * 0.72;
+      cx += kp * 0.12; // tam sayılı kesirde rakam kesre yapışmasın
       const wp = yaziYaz(g, p.pay, 0, 0, kp, false), wd = yaziYaz(g, p.payda, 0, 0, kp, false);
       const w = Math.max(wp, wd) + kp * 0.4;
       if (ciz) {
         yaziYaz(g, p.pay, cx + (w - wp) / 2, y - kp * 0.6, kp);
         yaziYaz(g, p.payda, cx + (w - wd) / 2, y + kp * 0.62, kp);
         g.fillRect(cx, y - px * 0.03, w, Math.max(1, px * 0.06));
+        // Genişletme sayısı öğretmenlerin yaptığı gibi kesrin altına parantezle yazılır.
+        if (p.genis) {
+          const gp = kp * 0.7, gw = yaziYaz(g, `(${p.genis})`, 0, 0, gp, false);
+          yaziYaz(g, `(${p.genis})`, cx + (w - gw) / 2, y + kp * 1.4, gp);
+        }
       }
       cx += w + kp * 0.15;
     }
@@ -517,7 +575,18 @@ async function coz() {
       ilerlemeGoster(i, sayfalar.length);
       durum(`Sayfa ${i + 1}/${sayfalar.length} çözülüyor… Bu biraz sürebilir, sayfayı kapatma.`);
       try {
-        uygula(i, await tekrarli(cagir, key, izgaraliGoruntu(s), talimat, i + 1));
+        const goruntu = izgaraliGoruntu(s);
+        let ham = await tekrarli(cagir, key, goruntu, talimat, i + 1);
+        if (temizle(ham).length) {
+          durum(`Sayfa ${i + 1}/${sayfalar.length} kontrol ediliyor… Bu biraz sürebilir, sayfayı kapatma.`);
+          try {
+            const denetim = await tekrarli(cagir, key, goruntu, kontrolEkle(talimat, temizle(ham)), i + 1);
+            if (temizle(denetim).length) ham = denetim; // boş denetim ilk çözümü silmesin
+          } catch (e) {
+            console.error(e); // kontrol başarısızsa ilk çözüm kalır
+          }
+        }
+        uygula(i, ham);
         cozulen++;
       } catch (e) {
         // Şifre gibi kalıcı hatalar durdurur; tek sayfanın sorunu diğerlerini engellemesin.
