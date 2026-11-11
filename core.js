@@ -76,6 +76,31 @@ export function talimatYap(temel, sinif, kurallar) {
   return t;
 }
 
+// Basılı metnin üstüne binen satırı yakındaki boş yere kaydırır; yer yoksa küçültür.
+// kutu(a) satırın kapladığı alanı, murekkep(kutu) o alandaki basılı mürekkep oranını verir (0-1).
+export function yerlestir(yazilar, kutu, murekkep, esik = 0.04) {
+  const yerlesen = [];
+  const cakisir = (k) => yerlesen.some((b) => k.x0 < b.x1 && b.x0 < k.x1 && k.y0 < b.y1 && b.y0 < k.y1);
+  for (const a of [...yazilar].sort((p, q) => p.y - q.y)) {
+    let en = null;
+    for (const olcek of [1, 0.9, 0.8, 0.7]) {
+      for (const dy of [0, -4, 4, -8, 8, -12, 12, -18, 18, -25, 25, -35, 35]) {
+        const y = a.y + dy;
+        if (y < 0 || y > 985) continue;
+        const k = kutu({ ...a, y, h: a.h * olcek });
+        if (cakisir(k)) continue;
+        const m = murekkep(k);
+        if (!en || m < en.m - 1e-9) en = { y, h: a.h * olcek, m, k };
+        if (m <= esik) break;
+      }
+      if (en && en.m <= esik) break;
+    }
+    if (en) { a.y = en.y; a.h = en.h; }
+    yerlesen.push(en ? en.k : kutu(a));
+  }
+  return yazilar;
+}
+
 // Model çıktısı güvenilmez girdi: bozuk öğeleri at, koordinatları sayfaya sığdır.
 export function temizle(ham) {
   const liste = Array.isArray(ham?.yazilar) ? ham.yazilar : [];

@@ -1,7 +1,7 @@
 import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/build/pdf.min.mjs';
 import { PDFDocument } from 'https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/+esm';
 import Anthropic from 'https://cdn.jsdelivr.net/npm/@anthropic-ai/sdk@1.2.0/+esm';
-import { degismedi, duzeltmeEkle, ISRAR, kontrolEkle, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle } from './core.js';
+import { degismedi, duzeltmeEkle, ISRAR, kontrolEkle, kurallariTemizle, metaVar, parcala, sureYaz, talimatYap, temizle, yerlestir } from './core.js';
 import { KURAL_ADRESI } from './ayar.js';
 
 const PDFJS = 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.10.38/';
@@ -19,6 +19,7 @@ Yalnızca şu JSON'u döndür: {"yazilar":[{"text":"...","x":0,"y":0,"h":20}]}
 - Her satır ayrı öğedir. x,y satırın sol üst köşesi, h satır yüksekliğidir (genelde 16-26, boşluğa göre).
 - Cevap kutularına, noktalı çizgilerin hemen üstüne, boşluklara yaz. Basılı metnin ve şekillerin üstüne asla yazma; satırları birbirinin üstüne bindirme.
 - Satırların sağa taşmamasına dikkat et; sığmıyorsa alt satıra böl.
+- Her sorunun çözümü kendi boşluğunda kalsın; sonraki sorunun metnine, şekline veya kutusuna asla taşmasın. Önce boşluğun yüksekliğini ölç: yer azsa h'yi küçült, adımları kısalt ya da yan yana yaz.
 - Boşluk varsa kısa çözüm adımlarını, sonra net cevabı yaz. Boşluk darsa yalnızca cevabı yaz.
 - Sayfanın dilinde yaz. Çarpmayı · ile yaz: 5 · 10, 6 · (2x + 5), (+4) · (-3); soru × kullanıyorsa × kullan. Bölmeyi ÷ ile yaz. Ondalık ayırıcı virgüldür: 2,5.
 - Kesirleri her zaman alt alta yaz: pay ve paydayı [3|4] biçiminde ver; tam sayılı kesir 2[1|3] olur. Alt alta kesirli satır dikeyde yaklaşık 1,6 kat yer kaplar, satırları ona göre aralıklı koy.
@@ -368,9 +369,43 @@ function ciz(s) {
   }
 }
 
+// Sayfanın basılı mürekkebi için toplam tablo: herhangi bir dikdörtgendeki mürekkep oranı tek işlemde bulunur.
+function murekkepOlcer(s) {
+  if (s.murekkep) return s.murekkep;
+  const { width: W, height: H } = s.canvas;
+  const d = s.canvas.getContext('2d').getImageData(0, 0, W, H).data;
+  const T = new Uint32Array((W + 1) * (H + 1));
+  for (let y = 0; y < H; y++) {
+    let satir = 0;
+    for (let x = 0; x < W; x++) {
+      const p = (y * W + x) * 4;
+      if (d[p] * 0.3 + d[p + 1] * 0.59 + d[p + 2] * 0.11 < 160) satir++; // açık kareli zemin mürekkep sayılmaz
+      T[(y + 1) * (W + 1) + x + 1] = T[y * (W + 1) + x + 1] + satir;
+    }
+  }
+  s.murekkep = (k) => {
+    const x0 = Math.max(0, Math.round((k.x0 / 1000) * W)), x1 = Math.min(W, Math.round((k.x1 / 1000) * W));
+    const y0 = Math.max(0, Math.round((k.y0 / 1000) * H)), y1 = Math.min(H, Math.round((k.y1 / 1000) * H));
+    if (x1 <= x0 || y1 <= y0) return 0;
+    const say = T[y1 * (W + 1) + x1] - T[y0 * (W + 1) + x1] - T[y1 * (W + 1) + x0] + T[y0 * (W + 1) + x0];
+    return say / ((x1 - x0) * (y1 - y0));
+  };
+  return s.murekkep;
+}
+
+// Satırın sayfada kapladığı alan (0-1000 birim). Kesir yukarı ve aşağı, üs ve üst işaret yukarı taşar.
+// Alt sınır biraz içeride: noktalı cevap çizgisinin üstüne yazmak serbest.
+function satirKutusu(s, a) {
+  const gen = (yaziYaz(olcum, a.text, 0, 0, 100, false) / 100) * a.h * s.oran;
+  const kesirli = a.text.includes('['), ustlu = /[\^↔→⌒²³]/.test(a.text);
+  return { x0: a.x, x1: a.x + gen, y0: a.y + a.h * (kesirli ? -0.25 : ustlu ? -0.2 : 0.05), y1: a.y + a.h * (kesirli ? 1.25 : 0.85) };
+}
+
 export function uygula(i, ham) {
   const s = sayfalar[i];
   s.yazilar = temizle(ham);
+  for (const a of s.yazilar) sigdir(s, a);
+  yerlestir(s.yazilar, (a) => satirKutusu(s, a), murekkepOlcer(s), 0.02);
   s.bitti = true;
   ciz(s);
   if (s.kutu) s.kutu.hidden = false;
