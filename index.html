@@ -79,6 +79,11 @@
   .kart.acik input::file-selector-button { color: var(--yazi); background: rgba(20, 25, 37, .06); }
   .kart.acik button.ikincil { color: #f6efe3; background: #1a1f2b; box-shadow: 0 8px 20px rgba(20, 25, 37, .22); }
   .araclar { margin-top: 24px; }
+  .sira { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+  .sira:empty { display: none; }
+  .sira li { display: flex; align-items: center; gap: 6px; padding: 6px 8px 6px 12px; border: 1px solid var(--cizgi); border-radius: 10px; background: rgba(255, 255, 255, .6); font-size: 14px; }
+  .sira li span { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .sira button.kucuk { padding: 3px 10px; }
   .nasil summary { display: inline-flex; align-items: center; gap: 8px; list-style: none; cursor: pointer; padding: 7px 16px; border: 1px solid var(--cizgi); border-radius: 99px; font-weight: 600; font-size: 14.5px; color: var(--yazi); background: rgba(255, 255, 255, .55); }
   .nasil summary::-webkit-details-marker { display: none; }
   .nasil summary::after { content: "+"; font-weight: 700; color: var(--sampanya); }
@@ -145,6 +150,7 @@
       <label class="genis">Birleştirilecek PDF'ler (birden çok seç)
         <input id="birlesDosya" type="file" accept="application/pdf" multiple>
       </label>
+      <ol id="birlesListe" class="genis sira" aria-label="Birleştirme sırası"></ol>
       <div class="eylem genis"><button id="birlesBtn" class="ikincil">Birleştir ve kaydet</button></div>
       <p id="aracDurum" class="genis" role="status"></p>
     </section>

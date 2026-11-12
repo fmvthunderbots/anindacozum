@@ -744,9 +744,33 @@ async function bol() {
   }
 }
 
+// Birleştirme sırası: önce ada göre doğal sıra ("parça 2" "parça 10"dan önce), sonra öğretmen ↑ ↓ ile değiştirir.
+let birlesSira = [];
+
+function birlesListesi() {
+  $('birlesListe').replaceChildren(...birlesSira.map((f, i) => {
+    const li = document.createElement('li');
+    const ad = document.createElement('span');
+    ad.textContent = `${i + 1}. ${f.name}`;
+    const tasi = (yon, isaret, etiket) => {
+      const b = document.createElement('button');
+      b.className = 'ikincil kucuk';
+      b.textContent = isaret;
+      b.setAttribute('aria-label', `${f.name} ${etiket}`);
+      b.disabled = i + yon < 0 || i + yon >= birlesSira.length;
+      b.onclick = () => {
+        [birlesSira[i], birlesSira[i + yon]] = [birlesSira[i + yon], birlesSira[i]];
+        birlesListesi();
+      };
+      return b;
+    };
+    li.append(ad, tasi(-1, '↑', 'yukarı taşı'), tasi(1, '↓', 'aşağı taşı'));
+    return li;
+  }));
+}
+
 async function birlestir() {
-  // Ada göre doğal sıra: "parça 2" "parça 10"dan önce gelir.
-  const dosyalar = [...$('birlesDosya').files].sort((a, b) => a.name.localeCompare(b.name, 'tr', { numeric: true }));
+  const dosyalar = birlesSira;
   if (dosyalar.length < 2) return aracDurum('Birleştirmek için en az iki PDF seç.', 'hata');
   $('birlesBtn').disabled = true;
   try {
@@ -801,6 +825,10 @@ $('coz').onclick = coz;
 $('indir').onclick = indir;
 $('bolBtn').onclick = bol;
 $('birlesBtn').onclick = birlestir;
+$('birlesDosya').onchange = (e) => {
+  birlesSira = [...e.target.files].sort((a, b) => a.name.localeCompare(b.name, 'tr', { numeric: true }));
+  birlesListesi();
+};
 $('ogret').onclick = ogret;
 $('sinif').onchange = kurallariGoster;
 localStorage.removeItem('sifre'); // şifreli sürümden tarayıcıda kalan kayıt
