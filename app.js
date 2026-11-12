@@ -318,6 +318,37 @@ function sigdir(s, a) {
   if (genislik > sinir) a.h *= sinir / genislik;
 }
 
+// Yazı boyutu: A− / A+ düğmeleri, + / − tuşları veya (seçiliyken) fare tekerleği. Boyut PDF'e de yansır.
+const ADIM = 1.15;
+
+function odakla(s, a) {
+  s.el.querySelectorAll('.yazi')[s.yazilar.indexOf(a)]?.focus();
+}
+
+function boyutla(s, a, kat) {
+  a.h = Math.max(8, Math.min(60, a.h * kat));
+  ciz(s);
+  odakla(s, a);
+}
+
+function boyutAraci(s) {
+  if (s.arac) return s.arac;
+  const arac = document.createElement('div');
+  arac.className = 'boyut-araci';
+  arac.hidden = true;
+  for (const [etiket, kat, aciklama] of [['A−', 1 / ADIM, 'Yazıyı küçült'], ['A+', ADIM, 'Yazıyı büyüt']]) {
+    const b = document.createElement('button');
+    b.type = 'button';
+    b.textContent = etiket;
+    b.setAttribute('aria-label', aciklama);
+    b.onmousedown = (ev) => ev.preventDefault(); // odak seçili yazıda kalsın
+    b.onclick = () => s.secili && boyutla(s, s.secili, kat);
+    arac.append(b);
+  }
+  s.el.append(arac);
+  return (s.arac = arac);
+}
+
 function ciz(s) {
   s.el.querySelectorAll('.yazi').forEach((e) => e.remove());
   for (const a of s.yazilar) {
@@ -327,7 +358,7 @@ function ciz(s) {
     e.setAttribute('role', 'img');
     e.setAttribute('aria-label', a.text);
     e.tabIndex = 0;
-    e.title = 'Sürükle: taşı · Çift tık veya Enter: düzenle · Oklar: ince ayar';
+    e.title = 'Sürükle: taşı · A− / A+, + / − veya fare tekerleği: boyut · Çift tık veya Enter: düzenle · Oklar: ince ayar';
     // Kutu satırdan yüksek: alt alta kesirler kesilmesin.
     const px = (a.h / 1000) * s.canvas.height * 1.5;
     e.width = Math.ceil(yaziYaz(olcum, a.text, 0, 0, px, false) + px * 0.2);
@@ -348,8 +379,23 @@ function ciz(s) {
       ciz(s);
     };
     e.ondblclick = duzenle;
+    e.onfocus = () => {
+      s.secili = a;
+      const arac = boyutAraci(s);
+      arac.hidden = false;
+      arac.style.left = a.x / 10 + '%';
+      arac.style.top = (a.y - a.h * 0.7) / 10 + '%';
+    };
+    e.onblur = () => setTimeout(() => { if (!s.el.contains(document.activeElement)) boyutAraci(s).hidden = true; });
+    e.onwheel = (ev) => {
+      if (document.activeElement !== e) return; // seçili değilken sayfa kaysın
+      ev.preventDefault();
+      boyutla(s, a, ev.deltaY < 0 ? ADIM : 1 / ADIM);
+    };
     e.onkeydown = (ev) => {
       if (ev.key === 'Enter') return duzenle();
+      if (ev.key === '+' || ev.key === '=') return boyutla(s, a, ADIM);
+      if (ev.key === '-') return boyutla(s, a, 1 / ADIM);
       const d = { ArrowLeft: [-3, 0], ArrowRight: [3, 0], ArrowUp: [0, -3], ArrowDown: [0, 3] }[ev.key];
       if (!d) return;
       ev.preventDefault();
@@ -369,7 +415,7 @@ function ciz(s) {
         konumla();
       };
       // Yalnız taşıyınca yeniden çiz: öğeyi değiştirmek çift tıklamayı bozar.
-      e.onpointerup = () => { e.onpointermove = null; if (tasindi) ciz(s); };
+      e.onpointerup = () => { e.onpointermove = null; if (tasindi) { ciz(s); odakla(s, a); } };
     };
     s.el.append(e);
   }

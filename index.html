@@ -104,6 +104,9 @@
   .sayfa canvas.taban { display: block; width: 100%; height: auto; }
   .yazi { position: absolute; cursor: move; touch-action: none; user-select: none; }
   .yazi:hover { background: #1746a215; }
+  .yazi:focus { outline: 1.5px dashed #1746a2; outline-offset: 1px; }
+  .boyut-araci { position: absolute; z-index: 2; display: flex; gap: 4px; transform: translateY(calc(-100% - 4px)); }
+  .boyut-araci button { padding: 3px 10px; font-size: 13px; font-weight: 700; color: #fff; background: #1746a2; border-radius: 7px; box-shadow: 0 4px 12px rgba(0, 0, 0, .25); }
   .duzeltme { margin-bottom: 48px; }
   .secim { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--yazi); cursor: pointer; }
   .secim input { flex: none; width: 18px; height: 18px; padding: 0; accent-color: var(--sampanya); }
