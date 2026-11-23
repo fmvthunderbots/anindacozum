@@ -122,6 +122,9 @@
   .uyari-alt { margin: 0; font-size: clamp(17px, 2vw, 21px); line-height: 1.5; color: var(--soluk); }
   .uyari-eylem { display: flex; justify-content: flex-end; padding-top: 8px; }
   .uyari-eylem button { font-size: 17px; padding: 15px 40px; }
+  .uyari-onay-soru { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px; margin-top: 4px; padding: 18px 22px; border: 1.5px solid rgba(220, 192, 150, .55); border-radius: 16px; background: rgba(220, 192, 150, .12); }
+  .uyari-onay-soru p { margin: 0; font-size: clamp(18px, 2.2vw, 22px); font-weight: 700; color: #f6e7cf; }
+  .uyari-onay-soru button { font-size: 17px; padding: 13px 36px; color: #04261d; background: linear-gradient(180deg, #a5f3d8 0%, #4cc9a4 47%, #7ae3c3 53%, #2fa582 100%); box-shadow: 0 10px 26px rgba(47, 165, 130, .32), inset 0 1px 0 rgba(255, 255, 255, .7); }
 
   @media (max-width: 960px) {
     .duzen { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 40px 16px 24px; }
@@ -129,7 +132,7 @@
     body::after { background: rgba(246, 244, 239, .76); }
     #sayfalar { padding: 8px 16px 56px; }
   }
-  @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } .uyari-eylem button { width: 100%; } }
+  @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } .uyari-eylem button, .uyari-onay-soru button { width: 100%; } }
   @media (prefers-reduced-motion: reduce) { button, input, select, textarea { transition: none; } button:hover:not(:disabled) { transform: none; } }
 </style>
 </head>
@@ -225,8 +228,12 @@
     <p class="uyari-metin">Anında Çözüm sitesi ücretsiz yapay zekalara bağlıdır. <strong>Hata yapma payı vardır.</strong></p>
     <p class="uyari-metin">Kusursuz işler için <strong>Claude ücretli sürüm</strong> tavsiye edilir.</p>
     <p class="uyari-alt">Bunu bilerek kullanmaya devam edebilirsiniz.</p>
-    <div class="uyari-eylem">
-      <button id="uyariOnay" type="button">Okudum, devam et</button>
+    <div id="uyariIlkAdim" class="uyari-eylem">
+      <button id="uyariDevam" type="button">Devam et</button>
+    </div>
+    <div id="uyariSonAdim" class="uyari-onay-soru" role="alert" hidden>
+      <p>Uyarıyı okuduğunuzdan emin misiniz?</p>
+      <button id="uyariEvet" type="button">Evet</button>
     </div>
   </div>
 </div>
