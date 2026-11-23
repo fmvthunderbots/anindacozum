@@ -111,13 +111,25 @@
   .secim { display: flex; align-items: center; gap: 10px; font-size: 14.5px; font-weight: 500; letter-spacing: 0; text-transform: none; color: var(--yazi); cursor: pointer; }
   .secim input { flex: none; width: 18px; height: 18px; padding: 0; accent-color: var(--sampanya); }
 
+  body.uyari-acik { overflow: hidden; }
+  .uyari-perde { position: fixed; inset: 0; z-index: 1000; display: grid; place-items: center; padding: 20px; background: rgba(11, 14, 22, .78); -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px); }
+  .uyari-kutu { position: relative; width: min(100%, 720px); max-height: 92vh; overflow-y: auto; display: grid; gap: 22px; padding: clamp(28px, 5vw, 48px); border-radius: 26px; background: linear-gradient(160deg, rgba(30, 35, 48, .97), rgba(13, 16, 24, .99)); box-shadow: 0 34px 90px rgba(0, 0, 0, .68); }
+  .uyari-kutu::before { content: ""; position: absolute; inset: 0; padding: 1.5px; border-radius: inherit; pointer-events: none; background: linear-gradient(140deg, rgba(220, 192, 150, .75), rgba(255, 255, 255, .12) 40%, rgba(220, 192, 150, .5) 75%, rgba(255, 255, 255, .15)); -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
+  .uyari-etiket { justify-self: start; margin: 0; padding: 6px 16px; border: 1px solid rgba(220, 192, 150, .6); border-radius: 99px; background: rgba(220, 192, 150, .12); font: 700 14px/1.2 var(--baslik); letter-spacing: .08em; text-transform: uppercase; color: var(--sampanya); }
+  .uyari-kutu h2 { font: 600 clamp(28px, 4vw, 40px)/1.18 var(--baslik); letter-spacing: -.02em; color: var(--sampanya); margin: 0; }
+  .uyari-metin { margin: 0; font-size: clamp(21px, 2.6vw, 28px); line-height: 1.48; font-weight: 500; color: var(--yazi); }
+  .uyari-metin strong { color: #f6e7cf; font-weight: 700; }
+  .uyari-alt { margin: 0; font-size: clamp(17px, 2vw, 21px); line-height: 1.5; color: var(--soluk); }
+  .uyari-eylem { display: flex; justify-content: flex-end; padding-top: 8px; }
+  .uyari-eylem button { font-size: 17px; padding: 15px 40px; }
+
   @media (max-width: 960px) {
     .duzen { grid-template-columns: minmax(0, 1fr); gap: 32px; padding: 40px 16px 24px; }
     .giris { position: static; }
     body::after { background: rgba(246, 244, 239, .76); }
     #sayfalar { padding: 8px 16px 56px; }
   }
-  @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } }
+  @media (max-width: 560px) { .kart { grid-template-columns: 1fr; padding: 22px; } .uyari-eylem button { width: 100%; } }
   @media (prefers-reduced-motion: reduce) { button, input, select, textarea { transition: none; } button:hover:not(:disabled) { transform: none; } }
 </style>
 </head>
@@ -206,6 +218,19 @@
   </div>
 </main>
 <div id="sayfalar"></div>
+<div id="girisUyari" class="uyari-perde" role="dialog" aria-modal="true" aria-labelledby="uyariBaslik" hidden>
+  <div class="uyari-kutu">
+    <p class="uyari-etiket">Önemli Uyarı</p>
+    <h2 id="uyariBaslik">Kullanmadan Önce Okuyunuz</h2>
+    <p class="uyari-metin">Anında Çözüm sitesi ücretsiz yapay zekalara bağlıdır. <strong>Hata yapma payı vardır.</strong></p>
+    <p class="uyari-metin">Kusursuz işler için <strong>Claude ücretli sürüm</strong> tavsiye edilir.</p>
+    <p class="uyari-alt">Bunu bilerek kullanmaya devam edebilirsiniz.</p>
+    <div class="uyari-eylem">
+      <button id="uyariOnay" type="button">Okudum, devam et</button>
+    </div>
+  </div>
+</div>
+<script src="uyari.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>
